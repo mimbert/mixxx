@@ -1647,6 +1647,8 @@ NumarkMixtrack3.StripTouchEffect = function(channel, control, value, status, gro
 
     if (deck.shiftKey) {
         engine.setValue(deck.group, "playposition", value / 127);
+    } else if (deck.PADMode) {
+        engine.setValue('[PreviewDeck1]', 'playposition', value / 127);
     } else {
         if (deck.InstantFX.length) {
             for (var i = 0; i < deck.InstantFX.length; i++) {
