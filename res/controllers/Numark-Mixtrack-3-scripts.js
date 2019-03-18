@@ -1080,20 +1080,25 @@ NumarkMixtrack3.PlayButton = function(channel, control, value, status, group) {
     }
 };
 
+NumarkMixtrack3.browseButtonPreview = false;
 NumarkMixtrack3.BrowseButton = function(channel, control, value, status, group) {
     var shifted = (NumarkMixtrack3.decks.D1.shiftKey || NumarkMixtrack3.decks
         .D2.shiftKey || NumarkMixtrack3.decks.D3.shiftKey || NumarkMixtrack3.decks.D4.shiftKey);
+    var padmode = (NumarkMixtrack3.decks.D1.PADMode || NumarkMixtrack3.decks.D2.PADMode || NumarkMixtrack3.decks.D3.PADMode || NumarkMixtrack3.decks.D4.PADMode);
 
     if (value === ON) {
-	    if (shifted) {
-	        // SHIFT + BROWSE push : directory mode -- > Open/Close selected side bar item
+	    if (padmode) {
+	        // PADMODE + BROWSE push : directory mode -- > Open/Close selected side bar item
 	        engine.setValue('[Library]', 'GoToItem', true);
 	    } else {
-	        // Browse push : maximize/minimize library view
-	        if (value === ON) {
-	            script.toggleControl('[Master]', 'maximize_library');
-	        }
-	    }
+                if (NumarkMixtrack3.browseButtonPreview) {
+                    engine.setValue('[PreviewDeck1]', 'stop', 1);
+                    NumarkMixtrack3.browseButtonPreview = false;
+                } else {
+                    engine.setValue('[PreviewDeck1]', 'LoadSelectedTrackAndPlay', true);
+                    NumarkMixtrack3.browseButtonPreview = true;
+                }
+            }
     }
 };
 
@@ -1102,13 +1107,36 @@ NumarkMixtrack3.BrowseKnob = function(channel, control, value, status, group) {
         NumarkMixtrack3.decks.D1.shiftKey || NumarkMixtrack3.decks.D2.shiftKey ||
         NumarkMixtrack3.decks.D3.shiftKey || NumarkMixtrack3.decks.D4.shiftKey
     );
+    var lshifted = (NumarkMixtrack3.decks.D1.shiftKey || NumarkMixtrack3.decks.D3.shiftKey);
+    var rshifted = (NumarkMixtrack3.decks.D2.shiftKey || NumarkMixtrack3.decks.D4.shiftKey);
+    var padmode = (NumarkMixtrack3.decks.D1.PADMode || NumarkMixtrack3.decks.D2.PADMode || NumarkMixtrack3.decks.D3.PADMode || NumarkMixtrack3.decks.D4.PADMode);
+    var lpadmode = (NumarkMixtrack3.decks.D1.PADMode || NumarkMixtrack3.decks.D3.PADMode);
+    var rpadmode = (NumarkMixtrack3.decks.D2.PADMode || NumarkMixtrack3.decks.D4.PADMode);
 
     // value = 1 / 2 / 3 ... for positive //value = 1 / 2 / 3
     var nval = (value > 0x40 ? value - 0x80 : value);
 
-    // SHIFT+Turn BROWSE Knob : directory mode --> select Play List/Side bar item
-    if (shifted) {
-        engine.setValue('[Playlist]', 'SelectPlaylist', nval);
+    // LSHIT+Turn BROWSE Knob : x10 speedup
+    // RSHIT+Turn BROWSE Knob : x20 speedup
+    var speedup = 1;
+    if (lshifted) {
+        speedup = 10;
+    } else if (rshifted) {
+        speedup = 20;
+    }
+    nval = nval * speedup;
+
+    // PADMode+Turn BROWSE Knob : directory mode --> select Play List/Side bar item
+    if (padmode) {
+         if (nval > 0) {
+             for (i = 0; i < nval; i++) {
+                 engine.setValue(group, "SelectPlaylist", 1);
+             }
+         } else {
+             for (i = 0; i < -nval; i++) {
+                 engine.setValue(group, "SelectPlaylist", -1);
+             }
+         }
     } else {
         engine.setValue('[Playlist]', 'SelectTrackKnob', nval);
     }
